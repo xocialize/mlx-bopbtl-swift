@@ -178,6 +178,11 @@ public final class ScratchDetector {
             bridges.append(x)
             x = downPool[i](downPre[i](x))
             for block in downBlocks[i] { x = block(x) }
+            // ⚠️ Per-stage eval is a MEMORY bound, not a style choice: fully lazy, the CPU-stream
+            // graph materializes every conv's im2col temporary simultaneously at the final eval —
+            // measured 3.9 GB peak for a 448×256 forward. Evaluating per stage retires each
+            // stage's temporaries before the next allocates; peak fell to the working set.
+            eval(x)
         }
 
         for i in 0 ..< 4 {
@@ -190,6 +195,7 @@ public final class ScratchDetector {
             }
             x = concatenated([x, bridge], axis: 3)
             for block in upBlocks[i] { x = block(x) }
+            eval(x)   // same bound on the decoder side
         }
         return last(x)
     }
