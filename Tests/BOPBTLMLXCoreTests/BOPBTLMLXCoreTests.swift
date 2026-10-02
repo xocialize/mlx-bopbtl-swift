@@ -12,7 +12,7 @@ import XCTest
 @testable import BOPBTLMLXCore
 
 final class ReflectionPadTests: XCTestCase {
-    override func setUp() { super.setUp(); Device.setDefault(device: Device(.cpu)) }
+    override func invokeTest() { withMLXCPU { super.invokeTest() } }
 
     /// Pinned against `nn.ReflectionPad2d` semantics: mirror WITHOUT repeating the edge.
     func testMatchesTorchSemantics() {
@@ -38,7 +38,7 @@ final class ReflectionPadTests: XCTestCase {
 }
 
 final class LiveParityTests: XCTestCase {
-    override func setUp() { super.setUp(); Device.setDefault(device: Device(.cpu)) }
+    override func invokeTest() { withMLXCPU { super.invokeTest() } }
 
     /// The full fixture gate as a test — same 60 dB bar as `bopbtl-gate`. Skips without weights.
     func testFixturesMatchTorch() throws {
