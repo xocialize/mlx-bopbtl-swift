@@ -42,5 +42,8 @@ let package = Package(
         .testTarget(name: "BOPBTLMLXCoreTests", dependencies: ["BOPBTLMLXCore",
             .product(name: "MLX", package: "mlx-swift"),
         ]),
+        .testTarget(name: "MLXBOPBTLTests", dependencies: ["MLXBOPBTL",
+            .product(name: "MLXToolKit", package: "mlx-engine-swift"),
+        ]),
     ]
 )

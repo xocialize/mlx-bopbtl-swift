@@ -12,6 +12,12 @@ manual brushing).
 1.90 GiB zip → 150.6 MB fp32 safetensors). Reference behaviour: short-side-256 (/16-aligned)
 grayscale input normalized to [-1,1]; `sigmoid(logits) ≥ 0.4` is upstream's mask threshold.
 
+**Engine-materialized weights read in place since 0.2.1 (AB-A-0112).** MLXEngine downloads the declared
+`weightSources` into its model store before `load()`; `load()` reads that copy (flat or snapshot layout) instead of
+fetching a second one through swift-transformers' `HubApi`. It also reads `<root>/models/<org>/<name>/`, where earlier
+versions downloaded, so existing installs aren't fetched again. `HubApi` remains only the backstop outside the engine
+(no store, or nothing materialized); an explicit `weightsURL` bypasses all of it.
+
 ## Parity
 
 Fixture gate (`bopbtl-gate`) vs fp32 PyTorch on three shapes incl. non-square:

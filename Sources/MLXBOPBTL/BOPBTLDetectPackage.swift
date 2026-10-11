@@ -1,6 +1,5 @@
 import CoreGraphics
 import Foundation
-import Hub
 import ImageIO
 import MLX
 import MLXProfiling
@@ -40,7 +39,11 @@ public struct BOPBTLConfiguration: PackageConfiguration, WeightSourcing, Sendabl
 
     public func missingWeightSources(storeRoot: URL?) -> [WeightSource] {
         if weightsURL != nil { return [] }
-        return defaultMissingWeightSources(storeRoot: storeRoot)
+        // Also present: the copy load() downloaded through `HubApi` before 0.2.1 (`StoreWeights`), so existing installs
+        // aren't fetched again.
+        return defaultMissingWeightSources(storeRoot: storeRoot).filter {
+            !StoreWeights.installedByHubAPI(StoreWeights.weightsFile, repo: $0.repo, root: storeRoot)
+        }
     }
 
     // Persist the portable knob only; stamped roots and absolute paths re-stamp per session.
@@ -127,12 +130,9 @@ public final class BOPBTLDetectPackage: ModelPackage {
             }
             url = explicit
         } else {
-            let hub = configuration.modelsRootDirectory.map { HubApi(downloadBase: $0) } ?? HubApi()
-            let dir = try await hub.snapshot(from: Hub.Repo(id: BOPBTLConfiguration.repo),
-                                             matching: ["model.safetensors"]) { progress, speed in
-                WeightDownloadProgress.report(fraction: progress.fractionCompleted, bytesPerSecond: speed)
-            }
-            url = dir.appendingPathComponent("model.safetensors")
+            // The engine materialized the declared `weightSources` before load() (contract 1.24): `StoreWeights` reads
+            // its copy, and downloads through `HubApi` only for a caller outside the engine.
+            url = try await StoreWeights.resolve(repo: BOPBTLConfiguration.repo, root: configuration.modelsRootDirectory)
         }
         detector = try ScratchDetector(weightsURL: url)
     }
